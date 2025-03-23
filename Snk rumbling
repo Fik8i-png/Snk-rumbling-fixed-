@@ -1,0 +1,141 @@
+-- Create GUI
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local CollectLabel = Instance.new("TextLabel")
+local ImageLabel = Instance.new("ImageLabel")  -- New ImageLabel for the picture
+local StopButton = Instance.new("TextButton")  -- New button to stop collection
+
+ScreenGui.Parent = game.Players.LocalPlayer.PlayerGui
+ScreenGui.Name = "AutoCollectGUI"
+
+Frame.Parent = ScreenGui
+Frame.Size = UDim2.new(0, 300, 0, 150)  -- Adjusted frame size to fit image and button
+Frame.Position = UDim2.new(0, 10, 0, 10)
+Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Frame.BackgroundTransparency = 0.5
+
+CollectLabel.Parent = Frame
+CollectLabel.Size = UDim2.new(1, 0, 0.2, 0)  -- Adjust label size
+CollectLabel.Text = "Collecting Items..."
+CollectLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+CollectLabel.TextSize = 20
+CollectLabel.TextAlign = Enum.TextAlign.Center
+
+-- Add an Image to the GUI
+ImageLabel.Parent = Frame
+ImageLabel.Size = UDim2.new(0, 100, 0, 100)  -- Adjust image size
+ImageLabel.Position = UDim2.new(0.5, -50, 0.2, 0)  -- Position image next to the text
+ImageLabel.Image = "rbxassetid://YOUR_IMAGE_ASSET_ID"  -- Replace with your Roblox image asset ID or external URL
+
+-- Stop Button
+StopButton.Parent = Frame
+StopButton.Size = UDim2.new(0, 100, 0, 30)
+StopButton.Position = UDim2.new(0.5, -50, 0.8, 0)
+StopButton.Text = "Stop Collecting"
+StopButton.TextSize = 18
+StopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+StopButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+
+-- Function to create ESP (Wallhack effect)
+local function createESP(item)
+    if not item:FindFirstChild("ESP") then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "ESP"
+        highlight.Parent = item
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Red color for visibility
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- White outline
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+    end
+end
+
+-- Auto-collect items and show GUI status
+local itemNames = {"coal", "ammo", "hammer", "screwdriver", "gasoline"} -- Editable item list
+local specialItems = {"Yamir's Power", "Rod Reiss", "Grisha Yeager"}  -- Special items to check
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local collecting = true  -- This flag will control whether the collection is active or stopped
+
+-- Function to collect items
+local function collectItems()
+    for _, obj in pairs(game.Workspace:GetChildren()) do
+        if obj:IsA("Model") or obj:IsA("Part") then
+            for _, name in pairs(itemNames) do
+                if obj.Name:lower():find(name) then
+                    createESP(obj) -- Add ESP effect
+                    obj.CFrame = humanoidRootPart.CFrame -- Move item to player
+                    wait(0.2) -- Prevent lag
+                end
+            end
+        end
+    end
+end
+
+-- Function to check and kill Rod Reiss and Grisha Yeager
+local function killSpecialEnemies()
+    for _, obj in pairs(game.Workspace:GetChildren()) do
+        if obj:IsA("Model") then
+            -- Check for Rod Reiss
+            if obj.Name:lower():find("rod reiss") then
+                createESP(obj)  -- Add ESP for visibility
+                local humanoid = obj:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.Health = 0  -- Kill Rod Reiss by setting health to 0
+                end
+            end
+            -- Check for Grisha Yeager
+            if obj.Name:lower():find("grisha yeager") then
+                createESP(obj)  -- Add ESP for visibility
+                local humanoid = obj:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.Health = 0  -- Kill Grisha Yeager by setting health to 0
+                end
+            end
+        end
+    end
+end
+
+-- Function to check for special items (Yamir's Power, Rod Reiss, Grisha Yeager)
+local function checkSpecialItems()
+    for _, obj in pairs(game.Workspace:GetChildren()) do
+        if obj:IsA("Model") or obj:IsA("Part") then
+            for _, specialItem in pairs(specialItems) do
+                if obj.Name:lower():find(specialItem:lower()) then
+                    createESP(obj) -- Add ESP effect for special item
+                    if specialItem == "Yamir's Power" then
+                        -- Auto-teleport to Yamir's Spine
+                        local yamirSpine = game.Workspace:FindFirstChild("Yamir's Spine") -- Replace with the actual part name
+                        if yamirSpine then
+                            humanoidRootPart.CFrame = yamirSpine.CFrame
+                        end
+                    end
+                    wait(0.5) -- Prevent lag or spamming
+                end
+            end
+        end
+    end
+end
+
+-- Function to toggle collection on or off
+StopButton.MouseButton1Click:Connect(function()
+    collecting = not collecting
+    if collecting then
+        CollectLabel.Text = "Collecting Items..."
+        StopButton.Text = "Stop Collecting"
+    else
+        CollectLabel.Text = "Collection Stopped"
+        StopButton.Text = "Resume Collecting"
+    end
+end)
+
+-- Run auto-collect and kill enemies continuously (only when collecting is true)
+while true do
+    if collecting then
+        collectItems()  -- Collect items
+    end
+    killSpecialEnemies()  -- Check and kill Rod Reiss and Grisha Yeager
+    checkSpecialItems()  -- Check for other special items like Yamir's Power
+    wait(1) -- Run every 1 second
+end
